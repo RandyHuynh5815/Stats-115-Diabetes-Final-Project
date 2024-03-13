@@ -1,5 +1,5 @@
 ---
-title: "Diabetes Final Project"
+title: "Diabetes Final Project - Stats 115"
 format: revealjs
 editor: visual
 ---
