@@ -20,5 +20,12 @@ When you click the **Render** button a document will be generated that includes:
 When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
 
 ```{r}
-1+1
+# Load packages
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
 ```
