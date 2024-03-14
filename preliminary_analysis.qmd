@@ -1,0 +1,52 @@
+---
+title: "STATS115_preliminary_analysis"
+author: "Seiya Uno"
+format: pdf
+editor: visual
+---
+
+## Preliminary Analysis
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = 'pdf')
+```
+
+``` {r echo=FALSE, message=FALSE}
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+library(dplyr)
+library(Hmisc)
+library(corrplot)
+
+RANDOM_STATE = 84735
+```
+
+```{r}
+df <- read.csv("./data/binary_diabetes.csv")
+sample_n(df, 5)
+nrow(df)
+```
+```{r}
+ggplot(df, aes(x=Diabetes_binary)) +
+  geom_bar() +
+  theme_light() +
+  labs(title="Diabetes")
+
+ggplot(df, aes(x=as.factor(HighBP), fill=as.factor(Diabetes_binary), group=Diabetes_binary)) +
+  geom_bar() +
+  theme_light() +
+  labs(title="Diabetes and HighBP", x="HighBP",
+       fill="Diabetes")
+```
+
+```{r fig.height=7, fig.width=7, dpi=500}
+cor_mtx <- cor(df)
+corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6, )
+```
+It seems that BMI, DiffWalk, GenHealth, PhysHealth, HighCol, HighBP, Age, and HeartDiseaseAttack are positively correlated with Diabetes_binary.  DiffWalk, GenHealth, and PhysHealth are correlated with each other; hence we may not need all of them.
+
+For negative correlations, PhysActivity, Education, and Income seem more significant than other variables.
