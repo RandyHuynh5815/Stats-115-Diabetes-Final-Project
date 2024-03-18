@@ -1,0 +1,62 @@
+---
+title: "STATS115_diabetes_highBP_analysis"
+author: "Emily Truong"
+format: pdf
+editor: visual
+---
+
+## Preliminary Analysis
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = 'pdf')
+```
+
+``` {r echo=FALSE, message=FALSE}
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+library(dplyr)
+library(Hmisc)
+library(corrplot)
+
+seed = 84735
+```
+
+```{r}
+df <- read.csv("./data/binary_diabetes.csv")
+sample_n(df, 5)
+nrow(df)
+```
+
+```{r}
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+df[cols] <- lapply(df[cols], factor) 
+```
+
+### Informative Prior
+
+```{r}
+diabetes_highBP_model <- stan_glm(Diabetes_binary ~ HighBP,
+                               data = df,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273),
+                               prior = normal(0.17609, 0.02715),
+                               chains = 4, iter = 5000*2,
+                               seed = seed)
+                               -- prior_PD = FALSE, refresh=FALSE)
+prior_summary(diabetes_highBP_model)
+```
+
+```{r}
+mcmc_trace(diabetes_highBP_model, size=0.1)
+mcmc_dens_overlay(diabetes_highBP_model)
+mcmc_acf(diabetes_highBP_model, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_highBP_model, prob = 0.80)
+exp(posterior_interval(diabetes_highBP_model, prob = 0.80))
+```
