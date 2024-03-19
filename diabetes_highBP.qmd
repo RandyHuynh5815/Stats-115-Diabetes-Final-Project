@@ -46,7 +46,6 @@ diabetes_highBP_model <- stan_glm(Diabetes_binary ~ HighBP,
                                prior = normal(0.17609, 0.02715),
                                chains = 4, iter = 5000*2,
                                seed = seed)
-                               -- prior_PD = FALSE, refresh=FALSE)
 prior_summary(diabetes_highBP_model)
 ```
 
