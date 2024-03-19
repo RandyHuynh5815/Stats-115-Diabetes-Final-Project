@@ -75,7 +75,7 @@ ggplot(diabetes_rate_df, aes(x=BMI, y=diabetes_rate)) +
 ```
 
 
-### Weakly informative Prior
+### Weakly informative Prior (Default prior model)
 We fit model using rstanarm's default priors
 prior_PD = TRUE to simulate prior.
 ```{r}
@@ -98,7 +98,14 @@ df %>%
   filter(.prediction != 1)
 ```
 
-Small model
+## Model using default prior
+Using subset of data since it takes very long time to fit the model with full dataset.
+```{r}
+set.seed(RANDOM_STATE)
+sub_df <- sample_frac(df, 0.2)
+nrow(sub_df)
+```
+HighBP
 ```{r}
 diabetes_model_def_base <- stan_glm(Diabetes_binary ~ HighBP,
                                data = df,
@@ -119,6 +126,82 @@ mcmc_acf(diabetes_model_def_base, lags = 100)
 posterior_interval(diabetes_model_def_base, prob = 0.80)
 exp(posterior_interval(diabetes_model_def_base, prob = 0.80))
 ```
+HighChol 
+```{r}
+diabetes_model_def_HighChol <- stan_glm(Diabetes_binary ~ HighChol,
+                               data = sub_df,
+                               family = binomial,
+                               prior_intercept = normal(100, 5),
+                               prior = normal(0, 2.5),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_HighChol, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_HighChol)
+mcmc_acf(diabetes_model_def_HighChol, lags = 100)
+```
 
+```{r}
+posterior_interval(diabetes_model_def_HighChol, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_HighChol, prob = 0.80))
+```
+
+PhysActivity
+```{r}
+diabetes_model_def_PhysActivity  <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = sub_df,
+                               family = binomial,
+                               prior_intercept = normal(100, 5),
+                               prior = normal(0, 2.5),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_PhysActivity, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_PhysActivity)
+mcmc_acf(diabetes_model_def_PhysActivity, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_def_PhysActivity, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_PhysActivity, prob = 0.80))
+```
+
+
+GenHlth
+```{r}
+diabetes_model_def_Genhealth  <- stan_glm(Diabetes_binary ~ GenHlth,
+                               data = sub_df,
+                               family = binomial,
+                               prior_intercept = normal(100, 5),
+                               prior = normal(0, 2.5),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_Genhealth, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_Genhealth)
+mcmc_acf(diabetes_model_def_Genhealth, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_def_Genhealth, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_Genhealth, prob = 0.80))
+```
+
+
+## Informative prior
+physactivity
+```{r}
+diabetes_model_def_phys <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = df,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273, autoscale = FALSE),
+                               prior = normal(-2.4511, 0.1178, autoscale = FALSE),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_phys, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_phys)
+mcmc_acf(diabetes_model_def_phys, lags = 100)
+```
 
 
