@@ -1,0 +1,180 @@
+---
+title: "Test"
+format: html
+editor: visual
+---
+
+```{r}
+# Load packages
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+```
+
+## Preparing for Model Creation
+
+### Load Dataset
+
+```{r}
+diabetes <- read.csv("data/binary_diabetes.csv", header=TRUE)
+```
+
+```{r}
+head(diabetes)
+```
+
+### Data Analysis
+
+```{r}
+count(diabetes, Diabetes_binary)
+```
+
+```{r}
+35346/(35346+218334)
+```
+
+```{r}
+count(diabetes, HighChol)
+```
+
+```{r}
+107591/(146089+107591)
+```
+
+```{r}
+ggplot(diabetes, aes(x=Diabetes_binary)) +
+  stat_count()
+```
+
+```{r}
+ggplot(diabetes, aes(x=HighChol)) +
+  stat_count()
+```
+
+```{r}
+ggplot(diabetes, aes(x=as.factor(Diabetes_binary), fill=as.factor(HighChol))) +
+  stat_count(position = "dodge")
+```
+
+### Random Sample
+
+```{r}
+diabetes_sample <- diabetes %>%
+  sample_n(size=10000)
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=Diabetes_binary)) +
+  stat_count()
+```
+
+```{r}
+count(diabetes_sample, Diabetes_binary)
+```
+
+```{r}
+1401/10000
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=HighChol)) +
+  stat_count()
+```
+
+```{r}
+count(diabetes_sample, HighChol)
+```
+
+```{r}
+4263/10000
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=as.factor(Diabetes_binary), fill=as.factor(HighChol))) +
+  stat_count(position = "dodge")
+```
+
+## Test Model
+
+### Prior Model
+
+```{r}
+diabetes_prior <- stan_glm(Diabetes_binary ~ HighChol,
+                             data = diabetes_sample, family = binomial,
+                             prior_intercept = normal(-1.7585, 0.1273),
+                             prior = normal(0.4033, 0.0615),
+                             chains = 4, iter = 5000*2, seed = 84735,
+                             prior_PD = TRUE)
+```
+
+```{r}
+set.seed(84735)
+
+# Plot 100 prior models with humidity
+diabetes_sample %>% 
+  add_fitted_draws(diabetes_prior, n = 100) %>% 
+  ggplot(aes(x = HighChol, y = Diabetes_binary)) +
+    geom_line(aes(y = .value, group = .draw), size = 0.1)
+
+# Plot the observed proportion of rain in 100 prior datasets
+diabetes_sample %>% 
+  add_predicted_draws(diabetes_prior, n = 100) %>% 
+  group_by(.draw) %>% 
+  summarize(proportion_diabetes = mean(.prediction == 1)) %>% 
+  ggplot(aes(x = proportion_diabetes)) +
+    geom_histogram(color = "white")
+```
+
+### Updating For Posterior
+
+```{r}
+diabetes_model_1 <- update(diabetes_prior, prior_PD = FALSE)
+```
+
+```{r}
+mcmc_trace(diabetes_model_1)
+mcmc_dens_overlay(diabetes_model_1)
+mcmc_acf(diabetes_model_1)
+```
+
+```{r}
+# Posterior summary statistics
+tidy(diabetes_model_1, effects = c("fixed", "aux"),
+     conf.int = TRUE, conf.level = 0.80) %>% 
+  select(-std.error)
+```
+
+```{r}
+exp(posterior_interval(diabetes_model_1, prob = 0.80))
+```
+
+## Posterior Evaluation
+
+```{r}
+diabetes_rain <- function(x){mean(x == 1)}
+pp_check(diabetes_model_1, nreps = 100,
+         plotfun = "stat", stat = "diabetes_rain") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+classification_summary(model = diabetes_model_1, data = diabetes_sample, cutoff = 0.15)
+```
+
+```{r}
+set.seed(84735)
+cv_accuracy_1 <- classification_summary_cv(
+  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.5, k = 10)
+cv_accuracy_1$cv
+```
+
+```{r}
+set.seed(84735)
+cv_accuracy_1 <- classification_summary_cv(
+  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.45, k = 10)
+cv_accuracy_1$cv
+```
