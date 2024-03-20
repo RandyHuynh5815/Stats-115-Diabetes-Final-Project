@@ -54,7 +54,7 @@ ggplot(df, aes(x=HighBP, fill=Diabetes_binary, group=Diabetes_binary)) +
 ```{r fig.height=7, fig.width=7, dpi=500}
 # cor() function want nuimerical values, not factors. Hence, we pass original df here.
 cor_mtx <- cor(df_orig)
-#corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6, )
+#corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6)
 ```
 It seems that BMI, DiffWalk, GenHealth, PhysHealth, HighCol, HighBP, Age, and HeartDiseaseAttack are positively correlated with Diabetes_binary.  DiffWalk, GenHealth, and PhysHealth are correlated with each other; hence we may not need all of them.
 
@@ -80,10 +80,6 @@ ggplot(diabetes_rate_df, aes(x=BMI, y=diabetes_rate)) +
 Using subset of data since it takes very long time to fit the model with full dataset.
 Split dataset into 10 chunks
 ```{r}
-adf <- function(x) {
-  as.data.frame(x[1])
-}
-
 set.seed(RANDOM_STATE)
 df <- df[sample(1:nrow(df)), ] 
 s <- split(df, (seq(nrow(df))-1) %/% floor(nrow(df) * 0.1)) 
@@ -244,4 +240,62 @@ summary_I_PA <- get_summary(diabetes_model_I_PA, s, cutoff, 2, 6)
 summary_I_PA
 ```
 For PhysActivity, the results are exactly the same for models with default and informative prior. The model has low sensitivity (true positive rate), which is very bad for detecting diabetes because the model predicts a lots of patients as negative when they actually have diabetes.
+
+## Using multiple predictors
+All variable with default prior
+```{r}
+diabetes_model_I_all <- stan_glm(Diabetes_binary ~ .,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_I_all, size=0.1)
+mcmc_dens_overlay(diabetes_model_I_all)
+mcmc_acf(diabetes_model_I_all, lags = 100)
+```
+```{r}
+posterior_interval(diabetes_model_I_all, prob = 0.80)
+exp(posterior_interval(diabetes_model_I_all, prob = 0.80))
+
+pp_check(diabetes_model_I_all, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+```{r}
+summary_all <- get_summary(diabetes_model_I_all, s, cutoff, 2, 6)
+summary_all
+```
+
+## Get ELPD
+```{r}
+elpd_PA <- loo(diabetes_model_I_PA)
+elpd_all <- loo(diabetes_model_I_all)
+```
+<!-- raw output from r console -->
+PA
+Computed from 20000 by 25368 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo -10086.9 100.9
+p_loo         1.9   0.0
+looic     20173.9 201.9
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
+
+All
+Computed from 20000 by 25368 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo  -8163.2  90.7
+p_loo        23.1   0.4
+looic     16326.5 181.4
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
 
