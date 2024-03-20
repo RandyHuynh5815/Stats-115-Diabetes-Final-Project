@@ -1,0 +1,138 @@
+---
+title: "TestKL"
+format: revealjs
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+# Load packages
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+```
+
+You can add options to executable code like this
+
+```{r}
+# Load dataset
+df <- read.csv("./data/binary_diabetes.csv")
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+df[cols] <- lapply(df[cols], factor) 
+df
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+# Create sample
+diabetes_sample <- df %>%
+  sample_n(size = 10000)
+
+diabetes_HeartDiseaseModel <- stan_glm(Diabetes_binary ~ HeartDiseaseorAttack,
+                                       data = diabetes_sample,
+                                       family = binomial,
+                                       prior_intercept = normal(-1.7585, 0.1273),
+                                       prior = normal(0.7793, 0.028),
+                                       chains = 4, iter = 5000*2,
+                                       seed = 84735,
+                                       prior_PD = TRUE)
+
+prior_summary(diabetes_HeartDiseaseModel)
+```
+
+```{r}
+# Plot 100 models with heart disease 
+diabetes_sample %>% 
+  add_fitted_draws(diabetes_HeartDiseaseModel, n = 100) %>%
+  ggplot(aes(x = HeartDiseaseorAttack, y = Diabetes_binary)) +
+    geom_line(aes(y = .value, group = .draw), size = 0.1)
+
+# Plot observed proportion
+diabetes_sample %>%
+  add_predicted_draws(diabetes_HeartDiseaseModel, n = 100) %>%
+  group_by(.draw) %>%
+  summarize(proportion_d = mean(.prediction == 1)) %>%
+  ggplot(aes(x = proportion_d)) + 
+    geom_histogram(color = "white")
+```
+
+```{r}
+diabetes_HeartDiseaseModel_post <- update(diabetes_HeartDiseaseModel, prior_PD = FALSE)
+
+mcmc_trace(diabetes_HeartDiseaseModel_post)
+mcmc_dens_overlay(diabetes_HeartDiseaseModel_post)
+mcmc_acf(diabetes_HeartDiseaseModel_post)
+```
+
+```{r}
+# Posterior summary
+tidy(diabetes_HeartDiseaseModel_post, effects = c("fixed", "aux"),
+     conf.int = TRUE, conf.level = 0.80) %>%
+  select(-std.error)
+```
+
+```{r}
+exp(posterior_interval(diabetes_HeartDiseaseModel_post, prob = 0.80))
+
+```
+
+```{r}
+diabetes_heart <- function(x){mean(x == 1)}
+pp_check(diabetes_HeartDiseaseModel_post, nreps = 100,
+         plotfun = "stat", stat = "diabetes_heart") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+pp_check(diabetes_HeartDiseaseModel_post, nreps = 50) +
+  xlab("diabetes")
+```
+
+```{r}
+# Confusion matrix for predicting diabetes
+# False negatives --> 1068 (pretty bad)
+# False positives --> 620
+# Note imbalance in data, higher quantity of true positives in non-diabetics
+classification_summary(model = diabetes_HeartDiseaseModel_post, data = diabetes_sample, cutoff = 0.15)
+```
+
+```{r}
+set.seed(84735)
+cv_accuracy_1 <- classification_summary_cv(
+  model = diabetes_HeartDiseaseModel_post, data = diabetes_sample, cutoff = 0.5, k = 10
+)
+cv_accuracy_1$cv
+```
+
+```{r}
+set.seed(84735)
+cv_accuracy_2 <- classification_summary_cv(
+  model = diabetes_HeartDiseaseModel_post, data = diabetes_sample, cutoff = 0.45, k = 10
+)
+cv_accuracy_2$cv
+```
+
+```{r}
+count(df, Diabetes_binary)
+```
+
+```{r}
+total_sample <- 218334 + 35346
+percent_negative <- 218334 / total_sample
+percent_positive <- 35346 / total_sample
+
+percent_negative
+percent_positive
+```
