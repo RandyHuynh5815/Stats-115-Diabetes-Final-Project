@@ -118,6 +118,10 @@ diabetes_prior <- stan_glm(Diabetes_binary ~ HighChol,
 ```
 
 ```{r}
+prior_summary(diabetes_prior)
+```
+
+```{r}
 set.seed(84735)
 
 # Plot 100 prior models with humidity
