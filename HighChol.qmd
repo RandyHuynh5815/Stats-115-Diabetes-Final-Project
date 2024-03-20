@@ -5,6 +5,8 @@ editor: visual
 ---
 
 ```{r}
+#| echo: false
+
 # Load packages
 library(bayesrules)
 library(tidyverse)
@@ -20,7 +22,11 @@ library(forcats)
 ### Load Dataset
 
 ```{r}
+#| echo: false
+
 diabetes <- read.csv("data/binary_diabetes.csv", header=TRUE)
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+diabetes[cols] <- lapply(diabetes[cols], factor)
 ```
 
 ```{r}
@@ -162,19 +168,16 @@ pp_check(diabetes_model_1, nreps = 100,
 ```
 
 ```{r}
+classification_summary(model = diabetes_model_1, data = diabetes_sample, cutoff = 0.5)
+```
+
+```{r}
 classification_summary(model = diabetes_model_1, data = diabetes_sample, cutoff = 0.15)
 ```
 
 ```{r}
 set.seed(84735)
 cv_accuracy_1 <- classification_summary_cv(
-  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.5, k = 10)
-cv_accuracy_1$cv
-```
-
-```{r}
-set.seed(84735)
-cv_accuracy_1 <- classification_summary_cv(
-  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.45, k = 10)
+  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.15, k = 10)
 cv_accuracy_1$cv
 ```
