@@ -114,6 +114,10 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 ------------------------------------------------------------------------
 
+### Diabetes_binary \~ HighBP
+
+------------------------------------------------------------------------
+
 ### Diabetes_binary \~ HeartAttackorDisease
 
 -   We developed an informative prior of normal(0.7793, 0.028) to deduce if our selected feature, HeartAttackorDisease, shows quantifiable evidence of statistical correlation beyond the correlation matrix with our response Diabetes_binary.
