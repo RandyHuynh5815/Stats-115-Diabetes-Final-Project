@@ -137,10 +137,19 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 ------------------------------------------------------------------------
 
+### Diabetes_binary \~ PhysActivity
+
+-   Our prior for physical activity is based on CDC's National Diabetes Statistics Report and a research article from the National Library of Medicine.
+-   Physical activity can reduce the risk of diabetes by 46%.
+-   Using this information, our prior for PhysActivity is (-2.4511, 0.1178).
+
+------------------------------------------------------------------------
+
 ## Model Results
 
 ```{r}
 #| label: define-sample-and-prior
+#| cache: true
 
 # Set sample size
 set.seed(84735)
@@ -226,6 +235,98 @@ loo_all <- loo(diabetes_all_model)
 loo_compare(loo_highBP, loo_PA, loo_heartAttack, loo_highChol, loo_4var, loo_all)
 ```
 
+```{r}
+#| label: summary
+#| cache: true
+#| dependson: "model-train"
+
+cutoff <- 0.2
+cs_highBP <- classification_summary(model = diabetes_highBP_model, 
+                                    data = diabetes_sample, cutoff = cutoff)
+cs_PA <- classification_summary(model = diabetes_PA_model, 
+                                data = diabetes_sample, cutoff = cutoff)
+cs_heartAttack <- classification_summary(model = diabetes_heartAttack_model, 
+                                         data = diabetes_sample, cutoff = cutoff)
+cs_highChol <- classification_summary(model = diabetes_highChol_model, 
+                                    data = diabetes_sample, cutoff = cutoff)
+cs_4var <- classification_summary(model = diabetes_4var_model, 
+                                  data = diabetes_sample, cutoff = cutoff)
+cs_all <- classification_summary(model = diabetes_all_model, 
+                                 data = diabetes_sample, cutoff = cutoff)
+```
+
+------------------------------------------------------------------------
+
+### High Blood Pressure
+```{r}
+#| label: summary_BP
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_highBP$confusion_matrix)
+knitr::kable(cs_highBP$accuracy_rates)
+```
+
+------------------------------------------------------------------------
+
+### Physical Activity
+```{r}
+#| label: summary_PA
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_PA$confusion_matrix)
+knitr::kable(cs_PA$accuracy_rates)
+```
+
+------------------------------------------------------------------------
+
+### Heart Disease Attack
+```{r}
+#| label: summary_HA
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_heartAttack$confusion_matrix)
+knitr::kable(cs_heartAttack$accuracy_rates)
+```
+
+------------------------------------------------------------------------
+
+### High Cholesterol
+```{r}
+#| label: summary_HC
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_highChol$confusion_matrix)
+knitr::kable(cs_highChol$accuracy_rates)
+```
+
+------------------------------------------------------------------------
+
+### Four Variables
+```{r}
+#| label: summary_4
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_4var$confusion_matrix)
+knitr::kable(cs_4var$accuracy_rates)
+```
+
+------------------------------------------------------------------------
+
+### All Variables
+```{r}
+#| label: summary_all
+#| cache: true
+#| dependson: "summary"
+
+knitr::kable(cs_all$confusion_matrix)
+knitr::kable(cs_all$accuracy_rates)
+```
+
 ------------------------------------------------------------------------
 
 ## Reflection on Results
@@ -245,3 +346,5 @@ loo_compare(loo_highBP, loo_PA, loo_heartAttack, loo_highChol, loo_4var, loo_all
 ------------------------------------------------------------------------
 
 ## Sources
+-   Feingold KR, Anawalt B, Blackman MR, et al., editors. Endotext [Internet]. South Dartmouth (MA): MDText.com, Inc.; 2000-. Available from: https://www.ncbi.nlm.nih.gov/books/NBK278943/
+-   Centers for Disease Control and Prevention. National Diabetes Statistics Report website. https://www.cdc.gov/diabetes/data/statistics-report/index.html. Accessed March 10, 2024.
