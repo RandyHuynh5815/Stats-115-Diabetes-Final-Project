@@ -256,6 +256,7 @@ cs_all <- classification_summary(model = diabetes_all_model,
 ```
 
 ------------------------------------------------------------------------
+
 ### High Blood Pressure
 ```{r}
 #| label: summary_BP
@@ -267,6 +268,7 @@ knitr::kable(cs_highBP$accuracy_rates)
 ```
 
 ------------------------------------------------------------------------
+
 ### Physical Activity
 ```{r}
 #| label: summary_PA
@@ -278,6 +280,7 @@ knitr::kable(cs_PA$accuracy_rates)
 ```
 
 ------------------------------------------------------------------------
+
 ### Heart Disease Attack
 ```{r}
 #| label: summary_HA
@@ -289,6 +292,7 @@ knitr::kable(cs_heartAttack$accuracy_rates)
 ```
 
 ------------------------------------------------------------------------
+
 ### High Cholesterol
 ```{r}
 #| label: summary_HC
@@ -300,6 +304,7 @@ knitr::kable(cs_highChol$accuracy_rates)
 ```
 
 ------------------------------------------------------------------------
+
 ### Four Variables
 ```{r}
 #| label: summary_4
@@ -311,6 +316,7 @@ knitr::kable(cs_4var$accuracy_rates)
 ```
 
 ------------------------------------------------------------------------
+
 ### All Variables
 ```{r}
 #| label: summary_all
