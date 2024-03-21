@@ -40,17 +40,23 @@ library(corrplot)
 
 ## Introduction
 
-Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar. This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes. Both types and their causes are still undetermined; however in Type 2's case, scientists have been able to infer that general health and exercise activity may contribute to its cause.
+-   Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar. 
+-   This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes. 
+-   Both types and their causes are still undetermined; however in Type 2's case, scientists have been able to infer that general health and exercise activity may contribute to its cause.
 
 ------------------------------------------------------------------------
 
-With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients. Our analysis aims to better understand this impact and the causes of diabetes by using Bayesian statistical analysis to determine correlations between diabetes and lifestyle factors.
+-   With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients. 
+-   Our analysis aims to better understand this impact and the causes of diabetes by using Bayesian statistical analysis to determine correlations between diabetes and lifestyle factors.
 
 ------------------------------------------------------------------------
 
 ## Data
 
-Our statistical analysis utilizes the CDC's dataset on Diabetes Health Indicators. It contains 35 features on healthcare statistics and lifestyle survey information of US citizens, along with their diagnosis of diabetes. We determine our response variable in our study to be Diabetes_binary, a variable that classifies whether or not a citizen has diabetes.
+-   Dataset: CDC's dataset on Diabetes Health Indicators
+-   35 features on healthcare statistics and lifestyle survey information of US citizens + diagnosis of diabetes
+-   Response variable: Diabetes_binary (classifies whether or not a citizen has diabetes)
+-   The data set itself has 253,680 rows. However, for our analysis, we took a random sample of 10,000 rows.
 
 ```{r}
 df <- read.csv("./data/binary_diabetes.csv")
@@ -66,7 +72,7 @@ cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","H
 df[cols] <- lapply(df[cols], factor) 
 ```
 
-Conducting preliminary analysis on the dataset shows us some insights; first, creating a correlation matrix allow us to see what features positively correlate with our response, Diabetes_binary.
+### Correlation Matrix
 
 ```{r fig.height=7, fig.width=7, dpi=500}
 cor_mtx <- cor(df_orig)
@@ -75,11 +81,7 @@ corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6, )
 
 ------------------------------------------------------------------------
 
-Based on our matrix, we can observe that BMI, DiffWalk, GenHealth, PhysHealth, HighChol, HighBP, Age, and HeartDiseaseorAttack are positively correlated with Diabetes_binary.
-
-------------------------------------------------------------------------
-
-A bar graph of Diabetes_binary allows us to observe the count of those with diabetes and without in the dataset. We can also observe the imbalance of data for Diabetes_binary – a note to keep in mind when conducting our model analysis.
+### Bar Graph of Diabetes_binary
 
 ```{r}
 ggplot(df, aes(x=Diabetes_binary)) +
@@ -88,7 +90,13 @@ ggplot(df, aes(x=Diabetes_binary)) +
   labs(title="Diabetes")
 ```
 
-We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary. Our feature selection will be explained as we delve into our model selection.
+- Note: There is an imbalance of data for Diabetes_binary.
+
+------------------------------------------------------------------------
+
+### Feature Selection
+
+- HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary.
 
 ------------------------------------------------------------------------
 
@@ -109,15 +117,15 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 ### Formula for Prior Derivation
 
--   $\mu$ = log($\pi$/(1-$\pi$) given probability $\pi$
--   $\sigma$ = 1/2\[log()-log()\] given 95% CI () for probabilities
+$$\mu = \log(\frac{\pi}{1-\pi})$$ given probability $\pi$
+$$\sigma = \frac{1}{2}[\log(\frac{\pi_u}{1-\pi_u})-\log(\frac{\pi_l}{1-\pi_l})]$$ given 95% CI ($\pi_l$, $\pi_u$) for probabilities
 
 ------------------------------------------------------------------------
 
 ### Diabetes_binary prior_intercept
 
 -   We developed an informative prior of normal(-1.7585, 0.1273) as a centered intercept prior.
--   This is based on the CDC's National Diabetes Statistics result, where the total diabetes percentage is 14.7% with a 95% CI of (13.2–16.4).
+-   This is based on the CDC's National Diabetes Statistics result, where the total diabetes percentage is 14.7% with a 95% CI of (13.2, 16.4).
 
 ------------------------------------------------------------------------
 
@@ -251,7 +259,8 @@ loo_compare(loo_highBP, loo_PA, loo_heartAttack, loo_highChol, loo_4var, loo_all
 #| cache: true
 #| dependson: "model-train"
 
-cutoff <- 0.2
+# Generate classifcation summaries for the confusion matrices
+cutoff <- 0.15
 cs_highBP <- classification_summary(model = diabetes_highBP_model, 
                                     data = diabetes_sample, cutoff = cutoff)
 cs_PA <- classification_summary(model = diabetes_PA_model, 
@@ -270,6 +279,7 @@ cs_all <- classification_summary(model = diabetes_all_model,
 
 ### High Blood Pressure
 
+- The cutoff for all the following confusion matrices is 0.15 to model the proportion of diabetes in the US. 
 ```{r}
 #| label: summary_BP
 #| cache: true
@@ -346,7 +356,15 @@ knitr::kable(cs_all$accuracy_rates)
 
 ------------------------------------------------------------------------
 
-## Reflection on Results
+## Result Interpretation
+
+-   Model utilizing all variables has the highest ELPD score.
+-   Model utilizing all variables also highest sensitivity, but the high BP model is extremely close.
+-   Model utilizing heart disease has the highest accuracy.
+
+------------------------------------------------------------------------
+
+## Reflection of our Analysis
 
 -   The result of our study highlighted the effect of blood pressure, cholesterol level, history of heart disease, and the level of physical activity on diabetes.
 -   Our model is fair because it helps people predict if someone might have diabetes.
@@ -359,10 +377,20 @@ knitr::kable(cs_all$accuracy_rates)
 -   All of the variables we chose are binary.
 -   Using continuous variable may give more precise predictions.
 -   EX: 1 unit or 10 units above high blood pressure cutoff point.
+-   Our dataset is extremely large, so our informative priors do not have much influence in the model training
 
 ------------------------------------------------------------------------
 
 ## Sources
 
--   Feingold KR, Anawalt B, Blackman MR, et al., editors. Endotext \[Internet\]. South Dartmouth (MA): MDText.com, Inc.; 2000-. Available from: https://www.ncbi.nlm.nih.gov/books/NBK278943/
--   Centers for Disease Control and Prevention. National Diabetes Statistics Report website. https://www.cdc.gov/diabetes/data/statistics-report/index.html. Accessed March 10, 2024.
+-   CDC Diabetes Health Indicators Dataset
+-   Centers for Disease Control and Prevention. National Diabetes Statistics Report website.
+-   Feingold KR, Anawalt B, Blackman MR, et al., editors. Endotext \[Internet\]. South Dartmouth (MA): MDText.com, Inc.; 2000-.
+
+------------------------------------------------------------------------
+
+-   High Cholesterol - BRFSS Brief, New York State Department of Health
+-   Prevalence of Diagnosed Diabetes, New York State Department of Health 
+-   Wise J. High blood pressure is linked to increased risk of diabetes BMJ 2015; 351 :h5167 doi:10.1136/bmj.h5167
+  
+  
