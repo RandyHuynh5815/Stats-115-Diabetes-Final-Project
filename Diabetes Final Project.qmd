@@ -40,13 +40,13 @@ library(corrplot)
 
 ## Introduction
 
--   Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar. 
--   This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes. 
+-   Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar.
+-   This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes.
 -   Both types and their causes are still undetermined; however in Type 2's case, scientists have been able to infer that general health and exercise activity may contribute to its cause.
 
 ------------------------------------------------------------------------
 
--   With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients. 
+-   With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients.
 -   Our analysis aims to better understand this impact and the causes of diabetes by using Bayesian statistical analysis to determine correlations between diabetes and lifestyle factors.
 
 ------------------------------------------------------------------------
@@ -90,13 +90,13 @@ ggplot(df, aes(x=Diabetes_binary)) +
   labs(title="Diabetes")
 ```
 
-- Note: There is an imbalance of data for Diabetes_binary.
+-   Note: There is an imbalance of data for Diabetes_binary.
 
 ------------------------------------------------------------------------
 
 ### Feature Selection
 
-- HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary.
+-   HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary.
 
 ------------------------------------------------------------------------
 
@@ -117,8 +117,7 @@ ggplot(df, aes(x=Diabetes_binary)) +
 
 ### Formula for Prior Derivation
 
-$$\mu = \log(\frac{\pi}{1-\pi})$$ given probability $\pi$
-$$\sigma = \frac{1}{2}[\log(\frac{\pi_u}{1-\pi_u})-\log(\frac{\pi_l}{1-\pi_l})]$$ given 95% CI ($\pi_l$, $\pi_u$) for probabilities
+$$\mu = \log(\frac{\pi}{1-\pi})$$ given probability $\pi$ $$\sigma = \frac{1}{2}[\log(\frac{\pi_u}{1-\pi_u})-\log(\frac{\pi_l}{1-\pi_l})]$$ given 95% CI ($\pi_l$, $\pi_u$) for probabilities
 
 ------------------------------------------------------------------------
 
@@ -279,7 +278,8 @@ cs_all <- classification_summary(model = diabetes_all_model,
 
 ### High Blood Pressure
 
-- The cutoff for all the following confusion matrices is 0.15 to model the proportion of diabetes in the US. 
+-   The cutoff for all the following confusion matrices is 0.15 to model the proportion of diabetes in the US.
+
 ```{r}
 #| label: summary_BP
 #| cache: true
@@ -390,7 +390,5 @@ knitr::kable(cs_all$accuracy_rates)
 ------------------------------------------------------------------------
 
 -   High Cholesterol - BRFSS Brief, New York State Department of Health
--   Prevalence of Diagnosed Diabetes, New York State Department of Health 
+-   Prevalence of Diagnosed Diabetes, New York State Department of Health
 -   Wise J. High blood pressure is linked to increased risk of diabetes BMJ 2015; 351 :h5167 doi:10.1136/bmj.h5167
-  
-  
