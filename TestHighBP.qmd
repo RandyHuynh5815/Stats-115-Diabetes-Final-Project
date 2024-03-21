@@ -10,10 +10,14 @@ knitr::opts_chunk$set(dev = 'pdf')
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ```{r echo=FALSE, message=FALSE}
 =======
 ``` {r echo=FALSE, message=FALSE}
 >>>>>>> 186f3b737bd877447f8c7ad515b4d974656ea607
+=======
+```{r echo=FALSE, message=FALSE}
+>>>>>>> c22d837858fde97e7572774537d64a146ec99781
 library(bayesrules)
 library(tidyverse)
 library(rstanarm)
