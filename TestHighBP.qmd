@@ -9,15 +9,7 @@ editor: visual
 knitr::opts_chunk$set(dev = 'pdf')
 ```
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 ```{r echo=FALSE, message=FALSE}
-=======
-``` {r echo=FALSE, message=FALSE}
->>>>>>> 186f3b737bd877447f8c7ad515b4d974656ea607
-=======
-```{r echo=FALSE, message=FALSE}
->>>>>>> c22d837858fde97e7572774537d64a146ec99781
 library(bayesrules)
 library(tidyverse)
 library(rstanarm)
@@ -29,12 +21,14 @@ library(dplyr)
 ```
 
 ```{r}
+# Load Dataset
 diabetes <- read.csv("./data/binary_diabetes.csv", header=TRUE)
 cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
 diabetes[cols] <- lapply(diabetes[cols], factor)
 ```
 
 ```{r}
+# Generate random sample of 10,000 rows
 diabetes_sample <- diabetes %>%
   sample_n(size=10000)
 ```
@@ -42,7 +36,7 @@ diabetes_sample <- diabetes %>%
 ### Informative Prior
 
 ```{r}
-# Prior Model
+# Prior Model for High Blood Pressure
 diabetes_highBP_prior <- stan_glm(Diabetes_binary ~ HighBP,
                                data = diabetes_sample,
                                family = binomial,
@@ -55,13 +49,13 @@ diabetes_highBP_prior <- stan_glm(Diabetes_binary ~ HighBP,
 ```{r}
 set.seed(84735)
 
-# Plot 100 Prior Models With Humidity
+# Plot 100 Prior Models
 diabetes_sample %>% 
   add_fitted_draws(diabetes_highBP_prior, n = 100) %>%
   ggplot(aes(x = HighBP, y = Diabetes_binary)) +
     geom_line(aes(y = .value, group = .draw), linewidth = 0.1)
 
-# Plot Observed Proportion of Rain in 100 Prior Datasets
+# Plot Observed Proportion of Diabetes
 diabetes_sample %>% 
   add_predicted_draws(diabetes_highBP_prior, n = 100) %>% 
   group_by(.draw) %>% 
@@ -73,10 +67,12 @@ diabetes_sample %>%
 ### Update Posterior
 
 ```{r}
+# Update the Posterior
 diabetes_highBP_post <- update(diabetes_highBP_prior, prior_PD = FALSE)
 ```
 
 ```{r}
+# View Posterior Diagnostic Plots
 mcmc_trace(diabetes_highBP_post, size=0.1)
 mcmc_dens_overlay(diabetes_highBP_post)
 mcmc_acf(diabetes_highBP_post, lags = 100)
@@ -90,12 +86,14 @@ tidy(diabetes_highBP_post, effects = c("fixed", "aux"),
 ```
 
 ```{r}
+# Credible Interval for Posterior Plots
 exp(posterior_interval(diabetes_highBP_post, prob = 0.80))
 ```
 
 ## Posterior Evaluation
 
 ```{r}
+# Check Accuracy of Simulated Data
 diabetes_rain <- function(x){mean(x == 1)}
 pp_check(diabetes_highBP_post, nreps = 100,
          plotfun = "stat", stat = "diabetes_rain") + 
@@ -103,10 +101,12 @@ pp_check(diabetes_highBP_post, nreps = 100,
 ```
 
 ```{r}
+# Classification Summary of the Posterior
 classification_summary(model = diabetes_highBP_post, data = diabetes_sample, cutoff = 0.15)
 ```
 
 ```{r}
+# Measure CV Accuracy with cutoff=0.5
 set.seed(84735)
 
 cv_accuracy <- classification_summary_cv(
@@ -115,6 +115,7 @@ cv_accuracy$cv
 ```
 
 ```{r}
+# Measure CV Accuracy with cutoff=0.45
 set.seed(84735)
 
 cv_accuracy <- classification_summary_cv(
