@@ -1,0 +1,301 @@
+---
+title: "STATS115_preliminary_analysis"
+author: "Seiya Uno"
+format: pdf
+editor: visual
+---
+
+## Preliminary Analysis
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = 'pdf')
+```
+
+``` {r echo=FALSE, message=FALSE}
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+library(dplyr)
+library(Hmisc)
+library(corrplot)
+
+RANDOM_STATE = 84735
+```
+
+```{r}
+df <- read.csv("./data/binary_diabetes.csv")
+sample_n(df, 3)
+nrow(df)
+```
+
+```{r}
+df_orig <- df
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+df[cols] <- lapply(df[cols], factor) 
+```
+
+
+```{r}
+ggplot(df, aes(x=Diabetes_binary)) +
+  geom_bar() +
+  theme_light() +
+  labs(title="Diabetes")
+
+ggplot(df, aes(x=HighBP, fill=Diabetes_binary, group=Diabetes_binary)) +
+  geom_bar() +
+  theme_light() +
+  labs(title="Diabetes and HighBP", x="HighBP",
+       fill="Diabetes")
+```
+
+```{r fig.height=7, fig.width=7, dpi=500}
+# cor() function want nuimerical values, not factors. Hence, we pass original df here.
+cor_mtx <- cor(df_orig)
+#corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6)
+```
+It seems that BMI, DiffWalk, GenHealth, PhysHealth, HighCol, HighBP, Age, and HeartDiseaseAttack are positively correlated with Diabetes_binary.  DiffWalk, GenHealth, and PhysHealth are correlated with each other; hence we may not need all of them.
+
+For negative correlations, PhysActivity, Education, and Income seem more significant than other variables.
+
+```{r}
+# ggplot(df, aes(x=BMI, fill=Diabetes_binary, group=Diabetes_binary)) +
+#   geom_bar(position = "fill") +
+#   theme_light() +
+#   labs(title="Diabetes and HighBP", x="BMI",
+#        fill="Diabetes")
+
+diabetes_rate_df <- df %>% group_by(BMI) %>% 
+                      summarise(diabetes_rate = mean(Diabetes_binary==1))
+                      
+ggplot(diabetes_rate_df, aes(x=BMI, y=diabetes_rate)) +
+  geom_point() +
+  theme_light() +
+  labs(title="Diabetes rate per BMI group", x="BMI")
+```
+
+## Model using default prior
+Using subset of data since it takes very long time to fit the model with full dataset.
+Split dataset into 10 chunks
+```{r}
+set.seed(RANDOM_STATE)
+df <- df[sample(1:nrow(df)), ] 
+s <- split(df, (seq(nrow(df))-1) %/% floor(nrow(df) * 0.1)) 
+train_df <- s[[1]]
+```
+
+
+### HighBP
+
+```{r}
+cutoff <- 0.15
+```
+
+We do not pass prior information to use default prior.
+```{r}
+diabetes_model_def_HB <- stan_glm(Diabetes_binary ~ HighBP,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_HB, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_HB)
+mcmc_acf(diabetes_model_def_HB, lags = 100)
+```
+
+
+
+```{r}
+posterior_interval(diabetes_model_def_HB, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_HB, prob = 0.80))
+
+prop <- function(x){mean(x == 1)}
+pp_check(diabetes_model_def_HB, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+```{r}
+get_summary <- function(model, data, cutoff, start, end) {
+  res <- c()
+  for(i in start:end) {
+    res <- append(res, classification_summary(model, data[[i]], cutoff=cutoff))
+  }
+  return(res)
+}
+summary_HB <- get_summary(diabetes_model_def_HB, s, 0.15, 2, 6)
+summary_HB
+```
+
+
+HighChol 
+```{r}
+diabetes_model_def_HC <- stan_glm(Diabetes_binary ~ HighChol,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_HC, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_HC)
+mcmc_acf(diabetes_model_def_HC, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_def_HC, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_HC, prob = 0.80))
+
+pp_check(diabetes_model_def_HC, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+summary_HC <- get_summary(diabetes_model_def_HC, s, cutoff, 2, 6)
+summary_HC
+```
+
+PhysActivity
+```{r}
+diabetes_model_def_PA  <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_PA, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_PA)
+mcmc_acf(diabetes_model_def_PA, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_def_PA, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_PA, prob = 0.80))
+
+pp_check(diabetes_model_def_PA, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+```{r}
+summary_PA <- get_summary(diabetes_model_def_PA, s, cutoff, 2, 6)
+summary_PA
+```
+
+GenHlth
+```{r}
+diabetes_model_def_GH  <- stan_glm(Diabetes_binary ~ GenHlth,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_def_GH, size=0.1)
+mcmc_dens_overlay(diabetes_model_def_GH)
+mcmc_acf(diabetes_model_def_GH, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_def_GH, prob = 0.80)
+exp(posterior_interval(diabetes_model_def_GH, prob = 0.80))
+
+pp_check(diabetes_model_def_GH, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+```{r}
+summary_GH <- get_summary(diabetes_model_def_GH, s, cutoff, 2, 6)
+summary_GH
+```
+
+
+## Informative prior
+physactivity
+```{r}
+diabetes_model_I_PA <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = train_df,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273, autoscale = FALSE),
+                               prior = normal(-2.4511, 0.1178, autoscale = FALSE),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_I_PA, size=0.1)
+mcmc_dens_overlay(diabetes_model_I_PA)
+mcmc_acf(diabetes_model_I_PA, lags = 100)
+```
+
+```{r}
+posterior_interval(diabetes_model_I_PA, prob = 0.80)
+exp(posterior_interval(diabetes_model_I_PA, prob = 0.80))
+
+pp_check(diabetes_model_I_PA, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+summary_I_PA <- get_summary(diabetes_model_I_PA, s, cutoff, 2, 6)
+summary_I_PA
+```
+For PhysActivity, the results are exactly the same for models with default and informative prior. The model has low sensitivity (true positive rate), which is very bad for detecting diabetes because the model predicts a lots of patients as negative when they actually have diabetes.
+
+## Using multiple predictors
+All variable with default prior
+```{r}
+diabetes_model_I_all <- stan_glm(Diabetes_binary ~ .,
+                               data = train_df,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+mcmc_trace(diabetes_model_I_all, size=0.1)
+mcmc_dens_overlay(diabetes_model_I_all)
+mcmc_acf(diabetes_model_I_all, lags = 100)
+```
+```{r}
+posterior_interval(diabetes_model_I_all, prob = 0.80)
+exp(posterior_interval(diabetes_model_I_all, prob = 0.80))
+
+pp_check(diabetes_model_I_all, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+```{r}
+summary_all <- get_summary(diabetes_model_I_all, s, cutoff, 2, 6)
+summary_all
+```
+
+## Get ELPD
+```{r}
+elpd_PA <- loo(diabetes_model_I_PA)
+elpd_all <- loo(diabetes_model_I_all)
+```
+<!-- raw output from r console -->
+PA
+Computed from 20000 by 25368 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo -10086.9 100.9
+p_loo         1.9   0.0
+looic     20173.9 201.9
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
+
+All
+Computed from 20000 by 25368 log-likelihood matrix
+
+         Estimate    SE
+elpd_loo  -8163.2  90.7
+p_loo        23.1   0.4
+looic     16326.5 181.4
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
+
