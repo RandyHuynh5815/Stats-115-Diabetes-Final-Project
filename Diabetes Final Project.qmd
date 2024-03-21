@@ -2,22 +2,9 @@
 title: "Diabetes Final Project - Stats 115"
 format: revealjs
 editor: visual
+execute:
+  echo: false
 ---
-
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
-
-## Bullets
-
-When you click the **Render** button a document will be generated that includes:
-
--   Content authored with markdown
--   Output from executable code
-
-## Code
-
-When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
 
 ```{r}
 # Load packages
@@ -28,4 +15,75 @@ library(bayesplot)
 library(tidybayes)
 library(broom.mixed)
 library(forcats)
+library(Hmisc)
+library(corrplot)
+
 ```
+
+## Introduction
+
+Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar. This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes. Both types and their causes are still undetermined; however in Type 2's case, scientists have been able to infer that general health and exercise activity may contribute to its cause.
+
+---
+
+With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients. Our analysis aims to better understand this impact and the causes of diabetes by using Bayesian statistical analysis to determine correlations between diabetes and lifestyle factors.
+
+---
+
+## Data
+
+Our statistical analysis utilizes the CDC's dataset on Diabetes Health Indicators. It contains 35 features on healthcare statistics and lifestyle survey information of US citizens, along with their diagnosis of diabetes. We determine our response variable in our study to be Diabetes_binary, a variable that classifies whether or not a citizen has diabetes.
+
+```{r}
+df <- read.csv("./data/binary_diabetes.csv")
+#sample_n(df, 3)
+#nrow(df)
+```
+
+---
+
+```{r}
+df_orig <- df
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+df[cols] <- lapply(df[cols], factor) 
+```
+
+Conducting preliminary analysis on the dataset shows us some insights; first, creating a correlation matrix allow us to see what features positively correlate with our response, Diabetes_binary.
+
+```{r fig.height=7, fig.width=7, dpi=500}
+cor_mtx <- cor(df_orig)
+corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6, )
+```
+
+---
+
+Based on our matrix, we can observe that BMI, DiffWalk, GenHealth, PhysHealth, HighChol, HighBP, Age, and HeartDiseaseorAttack are positively correlated with Diabetes_binary.
+
+---
+
+A bar graph of Diabetes_binary allows us to observe the count of those with diabetes and without in the dataset. We can also observe the imbalance of data for Diabetes_binary – a note to keep in mind when conducting our model analysis.
+
+```{r}
+ggplot(df, aes(x=Diabetes_binary)) +
+  geom_bar() +
+  theme_light() +
+  labs(title="Diabetes")
+```
+
+We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary.
+
+---
+
+## Model Selection
+
+---
+
+## Model Results
+
+---
+
+## Reflection on Results
+
+---
+
+## Sources
