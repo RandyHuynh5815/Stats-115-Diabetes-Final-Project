@@ -42,11 +42,11 @@ library(corrplot)
 
 Diabetes is a chronic disease that occurs when the pancreas does not produce insulin, or when the body develops insulin resistance, and cannot effectively control blood sugar. This can be classified into two major types, commonly known as Type 1 or Type 2 Diabetes. Both types and their causes are still undetermined; however in Type 2's case, scientists have been able to infer that general health and exercise activity may contribute to its cause.
 
----
+------------------------------------------------------------------------
 
 With 29.7 million people of all ages – approximately 8.9% of the US population diagnosed with diabetes, it's fairly important to consider the impact diabetes has caused on the day-to-day aspects of patients. Our analysis aims to better understand this impact and the causes of diabetes by using Bayesian statistical analysis to determine correlations between diabetes and lifestyle factors.
 
----
+------------------------------------------------------------------------
 
 ## Data
 
@@ -58,7 +58,7 @@ df <- read.csv("./data/binary_diabetes.csv")
 #nrow(df)
 ```
 
----
+------------------------------------------------------------------------
 
 ```{r}
 df_orig <- df
@@ -73,11 +73,11 @@ cor_mtx <- cor(df_orig)
 corrplot(cor_mtx, type="upper", order = "hclust", tl.cex = 0.6, )
 ```
 
----
+------------------------------------------------------------------------
 
 Based on our matrix, we can observe that BMI, DiffWalk, GenHealth, PhysHealth, HighChol, HighBP, Age, and HeartDiseaseorAttack are positively correlated with Diabetes_binary.
 
----
+------------------------------------------------------------------------
 
 A bar graph of Diabetes_binary allows us to observe the count of those with diabetes and without in the dataset. We can also observe the imbalance of data for Diabetes_binary – a note to keep in mind when conducting our model analysis.
 
@@ -90,25 +90,115 @@ ggplot(df, aes(x=Diabetes_binary)) +
 
 We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main variables of interest towards our response Diabetes_binary.
 
----
+------------------------------------------------------------------------
 
 ## Model Selection
 
----
+------------------------------------------------------------------------
 
 ## Model Results
 
----
+```{r}
+#| label: define-sample-and-prior
+
+# Set sample size
+set.seed(84735)
+diabetes_sample <- df %>%
+  sample_n(size=10000)
+
+# Set informative priors
+prior_intercept_diabetes <- normal(-1.7585, 0.1273)
+prior_bp <- normal(0.17609, 0.02715)
+prior_phys <- normal(-2.4511, 0.1178)
+prior_heart <- normal(0.7793, 0.028)
+prior_chol <- normal(0.4033, 0.0615)
+prior_params <- c(prior_bp, prior_phys, prior_heart, prior_chol)
+```
+
+```{r}
+#| label: model-train
+#| cache: true
+#| dependson: "define-sample-and-prior"
+
+diabetes_highBP_model <- stan_glm(Diabetes_binary ~ HighBP,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = prior_intercept_diabetes,
+                               prior = prior_bp,
+                               chains = 4, iter = 5000*2, seed = 84735, 
+                               prior_PD = FALSE, refresh=FALSE)
+
+diabetes_PA_model <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = prior_intercept_diabetes,
+                               prior = prior_phys,
+                               chains = 4, iter = 5000*2,
+                               seed = 84735,
+                               prior_PD = FALSE, refresh=FALSE)
+
+diabetes_heartAttack_model <- stan_glm(Diabetes_binary ~ HeartDiseaseorAttack,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = prior_intercept_diabetes,
+                               prior = prior_heart,
+                               chains = 4, iter = 5000*2, seed = 84735,
+                               prior_PD = FALSE, refresh=FALSE)
+
+diabetes_highChol_model <- stan_glm(Diabetes_binary ~ HighChol,
+                             data = diabetes_sample, family = binomial,
+                             prior_intercept = prior_intercept_diabetes,
+                             prior = prior_chol,
+                             chains = 4, iter = 5000*2, seed = 84735,
+                             prior_PD = FALSE, refresh=FALSE)
+
+diabetes_4var_model <- stan_glm(Diabetes_binary ~ 
+                                   HighBP+PhysActivity+HeartDiseaseorAttack+HighChol,
+                                   data = diabetes_sample, family = binomial,
+                                   prior_intercept = prior_intercept_diabetes,
+                                   prior = prior_params,
+                                   chains = 4, iter = 5000*2, seed = 84735,
+                                   prior_PD = FALSE, refresh=FALSE)
+
+diabetes_all_model <- stan_glm(Diabetes_binary ~ .,
+                                 data = diabetes_sample,
+                                 family = binomial,
+                                 chains = 4, iter = 5000*2,
+                                 seed = 84735,
+                                 prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+#| label: elpd
+#| cache: true
+#| dependson: "model-train"
+
+# Calculate ELPD for the models
+loo_highBP <- loo(diabetes_highBP_model)
+loo_PA <- loo(diabetes_PA_model)
+loo_heartAttack <- loo(diabetes_heartAttack_model)
+loo_highChol <- loo(diabetes_highChol_model)
+loo_4var <- loo(diabetes_4var_model)
+loo_all <- loo(diabetes_all_model)
+
+# Compare the ELPD for the 6 models
+loo_compare(loo_highBP, loo_PA, loo_heartAttack, loo_highChol, loo_4var, loo_all)
+```
+
+------------------------------------------------------------------------
 
 ## Reflection on Results
 - The result of our study highlighted the effect of blood pressure, cholesterol level, history of heart disease, and the level of physical activity on diabetes.
 - Our model is fair because it helps people predict if someone might have diabetes.
 - Our study can be used as a building block for future studies.
 
----
+------------------------------------------------------------------------
+
 ### Limitations
 - All of the variables we chose are binary.
 - Using continuous variable may give more precise predictions.
 - EX: 1 unit or 10 units above high blood pressure cutoff point.
+
+------------------------------------------------------------------------
 
 ## Sources
