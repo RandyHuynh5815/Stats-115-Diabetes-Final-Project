@@ -94,6 +94,26 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 ## Model Selection
 
+-   Logistic regression is the best model to use for this scenario.
+-   Our model will be represented in terms of log-odds: model priors and outputs.
+-   Informative priors would be normal distributions of log-odds.
+
+------------------------------------------------------------------------
+
+-   A lot of research we found were in the form of 95% CI intervals. We want to convert them into normal priors with mean $\mu$ and standard deviation $\sigma$.
+-   $\mu$ - Converted the estimate to log-odds
+-   $\sigma$ - Converted the 95% CI bounds to log-odds and divide the difference by 4 (subtract $\mu$ from one of the bounds and divided by 2)
+-   6 models total: HighBP, PhysActivity, HeartDiseaseorAttack, HighChol, all of the prev 4, all the variables except Diabetes_binary.
+
+------------------------------------------------------------------------
+
+### Diabetes_binary prior_intercept
+
+-   We developed an informative prior of normal(-1.7585, 0.1273) as a centered intercept prior.
+-   This is based on the CDC's National Diabetes Statistics result, where the total diabetes        percentage is 14.7% with a 95% CI of (13.2–16.4).
+
+------------------------------------------------------------------------
+
 ### Diabetes_binary \~ HeartAttackorDisease
 
 -   We developed an informative prior of normal(0.7793, 0.028) to deduce if our selected feature, HeartAttackorDisease, shows quantifiable evidence of statistical correlation beyond the correlation matrix with our response Diabetes_binary.
@@ -102,6 +122,14 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 -   Based on conducted research, we found that those with diabetes have twice the odds of contracting heart disease or attacks. More specifically, we sourced that the odds ratios associated with self-reported diabetes for prevalent ischemic heart attack to be 2.18, with a 95% confidence interval of (2.06, 2.30).
 -   Although using an odds ratio may not be preferred over odds since it is only a relative measure, we found it to be the most accurate information for our prior since most research articles would provide vaguer evidence of the relationship between diabetes and heart disease.
+
+------------------------------------------------------------------------
+
+### Diabetes_binary \~ HighChol
+
+-   We developed an informative prior of normal(0.4033, 0.0615) to deduce if our selected feature, HighChol, shows quantifiable evidence of statistical correlation beyond the correlation matrix with our response Diabetes_binary.
+-   Based on New York data, we found that 65.7% of those with diabetes have high cholesterol, with a 95% confidence interval of (62.5, 69).
+-   However, we want the proportion having diabetes out of those with high cholesterol. Using Bayes' Rule, we land on a proportion of 20.5% with 95% CI (19.5, 21.5).
 
 ------------------------------------------------------------------------
 
