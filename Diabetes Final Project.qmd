@@ -107,6 +107,13 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 
 ------------------------------------------------------------------------
 
+### Formula for Prior Derivation
+
+-   $\mu$ = log($\pi$/(1-$\pi$) given probability $\pi$
+-   $\sigma$ = 1/2\[log()-log()\] given 95% CI () for probabilities
+
+------------------------------------------------------------------------
+
 ### Diabetes_binary prior_intercept
 
 -   We developed an informative prior of normal(-1.7585, 0.1273) as a centered intercept prior.
@@ -115,6 +122,10 @@ We select HighBP, HighChol, HeartDiseaseorAttack, and PhysActivity as our main v
 ------------------------------------------------------------------------
 
 ### Diabetes_binary \~ HighBP
+
+-   We developed an informative prior of normal(0.71609, 0.02715) to deduce if High Blood Pressure (HighBP) is significantly correlated with Diabetes_binary
+-   Prior data was generated from the Journal of the American College of Cardiology which studied more than 4 million people
+-   People with high blood pressure have an almost 60% increased risk of developing type 2 diabetes with a 95% confidence interval of (58, 62)
 
 ------------------------------------------------------------------------
 
@@ -258,6 +269,7 @@ cs_all <- classification_summary(model = diabetes_all_model,
 ------------------------------------------------------------------------
 
 ### High Blood Pressure
+
 ```{r}
 #| label: summary_BP
 #| cache: true
@@ -270,6 +282,7 @@ knitr::kable(cs_highBP$accuracy_rates)
 ------------------------------------------------------------------------
 
 ### Physical Activity
+
 ```{r}
 #| label: summary_PA
 #| cache: true
@@ -282,6 +295,7 @@ knitr::kable(cs_PA$accuracy_rates)
 ------------------------------------------------------------------------
 
 ### Heart Disease Attack
+
 ```{r}
 #| label: summary_HA
 #| cache: true
@@ -294,6 +308,7 @@ knitr::kable(cs_heartAttack$accuracy_rates)
 ------------------------------------------------------------------------
 
 ### High Cholesterol
+
 ```{r}
 #| label: summary_HC
 #| cache: true
@@ -306,6 +321,7 @@ knitr::kable(cs_highChol$accuracy_rates)
 ------------------------------------------------------------------------
 
 ### Four Variables
+
 ```{r}
 #| label: summary_4
 #| cache: true
@@ -318,6 +334,7 @@ knitr::kable(cs_4var$accuracy_rates)
 ------------------------------------------------------------------------
 
 ### All Variables
+
 ```{r}
 #| label: summary_all
 #| cache: true
@@ -346,5 +363,6 @@ knitr::kable(cs_all$accuracy_rates)
 ------------------------------------------------------------------------
 
 ## Sources
--   Feingold KR, Anawalt B, Blackman MR, et al., editors. Endotext [Internet]. South Dartmouth (MA): MDText.com, Inc.; 2000-. Available from: https://www.ncbi.nlm.nih.gov/books/NBK278943/
+
+-   Feingold KR, Anawalt B, Blackman MR, et al., editors. Endotext \[Internet\]. South Dartmouth (MA): MDText.com, Inc.; 2000-. Available from: https://www.ncbi.nlm.nih.gov/books/NBK278943/
 -   Centers for Disease Control and Prevention. National Diabetes Statistics Report website. https://www.cdc.gov/diabetes/data/statistics-report/index.html. Accessed March 10, 2024.
