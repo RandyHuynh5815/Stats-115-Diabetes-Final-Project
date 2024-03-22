@@ -105,7 +105,7 @@ pp_check(diabetes_model_I_all, nreps = 100,
 
 ```{r}
 # confusion matrix
-summary_all <- classification_summary(model = diabetes_all_model, 
+summary_all <- classification_summary(model = diabetes_model_I_all, 
                                  data = diabetes_sample, cutoff = cutoff)
 summary_all
 ```
