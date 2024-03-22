@@ -117,7 +117,7 @@ ggplot(df, aes(x=Diabetes_binary)) +
 
 ### Formula for Prior Derivation
 
-$$\mu = \log(\frac{\pi}{1-\pi})$$ given probability $\pi$ $$\sigma = \frac{1}{2}[\log(\frac{\pi_u}{1-\pi_u})-\log(\frac{\pi_l}{1-\pi_l})]$$ given 95% CI ($\pi_l$, $\pi_u$) for probabilities
+$$\mu = \log(\frac{\pi}{1-\pi})$$ given probability $\pi$ $$\sigma = \frac{1}{4}[\log(\frac{\pi_u}{1-\pi_u})-\log(\frac{\pi_l}{1-\pi_l})]$$ given 95% CI ($\pi_l$, $\pi_u$) for probabilities
 
 ------------------------------------------------------------------------
 
@@ -389,6 +389,10 @@ knitr::kable(cs_all$accuracy_rates)
 
 ------------------------------------------------------------------------
 
+-   Bragg F, Li L, Smith M, Guo Y, Chen Y, Millwood I, Bian Z, Walters R, Chen J, Yang L, Collins R, Peto R, Lu Y, Yu B, Xie X, Lei Y, Luo G, Chen Z; China Kadoorie Biobank Collaborative Group. Associations of blood glucose and prevalent diabetes with risk of cardiovascular disease in 500 000 adult Chinese: the China Kadoorie Biobank. Diabet Med. 2014 May;31(5):540-51. doi: 10.1111/dme.12392. Epub 2014 Feb 5. PMID: 24344928; PMCID: PMC4114560.
 -   High Cholesterol - BRFSS Brief, New York State Department of Health
+
+------------------------------------------------------------------------
+
 -   Prevalence of Diagnosed Diabetes, New York State Department of Health
 -   Wise J. High blood pressure is linked to increased risk of diabetes BMJ 2015; 351 :h5167 doi:10.1136/bmj.h5167
