@@ -1,0 +1,101 @@
+---
+title: "Model Comparison"
+format: html
+editor: visual
+---
+
+## Preparing Data
+
+```{r}
+#| echo: false
+
+diabetes <- read.csv("data/binary_diabetes.csv", header=TRUE)
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+diabetes[cols] <- lapply(diabetes[cols], factor)
+```
+
+```{r}
+head(diabetes)
+```
+
+```{r}
+set.seed(84735)
+diabetes_sample <- diabetes %>%
+  sample_n(size=10000)
+```
+
+## Train Models
+
+```{r}
+diabetes_highBP_model <- stan_glm(Diabetes_binary ~ HighBP,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273),
+                               prior = normal(0.17609, 0.02715),
+                               chains = 4, iter = 5000*2, seed = 84735, 
+                               prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+diabetes_PA_model <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273),
+                               prior = normal(-2.4511, 0.1178),
+                               chains = 4, iter = 5000*2,
+                               seed = 84735,
+                               prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+diabetes_heartAttack_model <- stan_glm(Diabetes_binary ~ HeartDiseaseorAttack,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273),
+                               prior = normal(0.7793, 0.028),
+                               chains = 4, iter = 5000*2, seed = 84735,
+                               prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+diabetes_highChol_model <- stan_glm(Diabetes_binary ~ HighChol,
+                             data = diabetes_sample, family = binomial,
+                             prior_intercept = normal(-1.7585, 0.1273),
+                             prior = normal(0.4033, 0.0615),
+                             chains = 4, iter = 5000*2, seed = 84735,
+                             prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+diabetes_4var_model <- stan_glm(Diabetes_binary ~ 
+                                   HighBP+PhysActivity+HeartDiseaseorAttack+HighChol,
+                                   data = diabetes_sample, family = binomial,
+                                   prior_intercept = normal(-1.7585, 0.1273),
+                                   prior = prior_params,
+                                   chains = 4, iter = 5000*2, seed = 84735,
+                                   prior_PD = FALSE, refresh=FALSE)
+```
+
+```{r}
+diabetes_all_model <- stan_glm(Diabetes_binary ~ .,
+                                 data = diabetes_sample,
+                                 family = binomial,
+                                 chains = 4, iter = 5000*2,
+                                 seed = 84735,
+                                 prior_PD = FALSE, refresh=FALSE)
+```
+
+## Model Evaluation
+
+```{r}
+# Calculate ELPD for the models
+loo_highBP <- loo(diabetes_highBP_model)
+loo_PA <- loo(diabetes_PA_model)
+loo_heartAttack <- loo(diabetes_heartAttack_model)
+loo_highChol <- loo(diabetes_highChol_model)
+loo_4var <- loo(diabetes_4var_model)
+loo_all <- loo(diabetes_all_model)
+
+# Compare the ELPD for the 2 models
+loo_compare(loo_highBP, loo_PA, loo_heartAttack, loo_highChol, loo_4var, loo_all)
+```

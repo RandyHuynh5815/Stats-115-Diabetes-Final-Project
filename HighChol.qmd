@@ -1,0 +1,206 @@
+---
+title: "Test"
+format: html
+editor: visual
+---
+
+```{r}
+#| echo: false
+
+# Load packages
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+```
+
+## Preparing for Model Creation
+
+### Load Dataset
+
+```{r}
+#| echo: false
+
+# Load dataset and convert each variable in factors
+diabetes <- read.csv("data/binary_diabetes.csv", header=TRUE)
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+diabetes[cols] <- lapply(diabetes[cols], factor)
+```
+
+```{r}
+head(diabetes)
+```
+
+### Preliminary Data Analysis
+
+```{r}
+# Get the count of diabetes
+count(diabetes, Diabetes_binary)
+```
+
+```{r}
+# Get the diabetes proportion
+35346/(35346+218334)
+```
+
+```{r}
+# Get the count of high cholesterol
+count(diabetes, HighChol)
+```
+
+```{r}
+# Get the proportion of high cholesterol
+107591/(146089+107591)
+```
+
+```{r}
+# Get a bar graph of diabetes count
+ggplot(diabetes, aes(x=Diabetes_binary)) +
+  stat_count()
+```
+
+```{r}
+# Get a bar graph of high cholesterol count
+ggplot(diabetes, aes(x=HighChol)) +
+  stat_count()
+```
+
+```{r}
+# Get a bar graph of diabetes group by high cholesterol
+ggplot(diabetes, aes(x=as.factor(Diabetes_binary), fill=as.factor(HighChol))) +
+  stat_count(position = "dodge")
+```
+
+### Random Sample
+
+We repeat the same preliminary data analysis as before for the sample to ensure that the distribution is maintained during the sampling process.
+
+```{r}
+diabetes_sample <- diabetes %>%
+  sample_n(size=10000)
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=Diabetes_binary)) +
+  stat_count()
+```
+
+```{r}
+count(diabetes_sample, Diabetes_binary)
+```
+
+```{r}
+1401/10000
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=HighChol)) +
+  stat_count()
+```
+
+```{r}
+count(diabetes_sample, HighChol)
+```
+
+```{r}
+4263/10000
+```
+
+```{r}
+ggplot(diabetes_sample, aes(x=as.factor(Diabetes_binary), fill=as.factor(HighChol))) +
+  stat_count(position = "dodge")
+```
+
+## Test Model
+
+### Prior Model
+
+```{r}
+# Establish a prior model for our high cholesterol
+diabetes_prior <- stan_glm(Diabetes_binary ~ HighChol,
+                             data = diabetes_sample, family = binomial,
+                             prior_intercept = normal(-1.7585, 0.1273),
+                             prior = normal(0.4033, 0.0615),
+                             chains = 4, iter = 5000*2, seed = 84735,
+                             prior_PD = TRUE)
+```
+
+```{r}
+# Get the prior statistics for our model
+prior_summary(diabetes_prior)
+```
+
+```{r}
+set.seed(84735)
+
+# Plot 100 prior models with high cholesterol
+diabetes_sample %>% 
+  add_fitted_draws(diabetes_prior, n = 100) %>% 
+  ggplot(aes(x = HighChol, y = Diabetes_binary)) +
+    geom_line(aes(y = .value, group = .draw), size = 0.1)
+
+# Plot the observed proportion of diabetes in 100 prior datasets
+diabetes_sample %>% 
+  add_predicted_draws(diabetes_prior, n = 100) %>% 
+  group_by(.draw) %>% 
+  summarize(proportion_diabetes = mean(.prediction == 1)) %>% 
+  ggplot(aes(x = proportion_diabetes)) +
+    geom_histogram(color = "white")
+```
+
+### Updating For Posterior
+
+```{r}
+# Update the prior with the posterior data
+diabetes_model_1 <- update(diabetes_prior, prior_PD = FALSE)
+```
+
+```{r}
+# Plot diagnostic plots for simulation results 
+mcmc_trace(diabetes_model_1)
+mcmc_dens_overlay(diabetes_model_1)
+mcmc_acf(diabetes_model_1)
+```
+
+```{r}
+# Posterior summary statistics
+tidy(diabetes_model_1, effects = c("fixed", "aux"),
+     conf.int = TRUE, conf.level = 0.80) %>% 
+  select(-std.error)
+```
+
+```{r}
+# Get the 80% credible interval for odds
+exp(posterior_interval(diabetes_model_1, prob = 0.80))
+```
+
+## Posterior Evaluation
+
+```{r}
+# Posterior predictive check to ensure simulations maintain the same features as the original data
+diabetes_rain <- function(x){mean(x == 1)}
+pp_check(diabetes_model_1, nreps = 100,
+         plotfun = "stat", stat = "diabetes_rain") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+# Get classification summary of model with basic cutoff of 0.5
+classification_summary(model = diabetes_model_1, data = diabetes_sample, cutoff = 0.5)
+```
+
+```{r}
+# Get classification summary of model with cutoff of 0.15 based on prior knowledge of diabetes prevalence
+classification_summary(model = diabetes_model_1, data = diabetes_sample, cutoff = 0.15)
+```
+
+```{r}
+# Get cross-validated classifcation summaries of model with cutoff of 0.15
+set.seed(84735)
+cv_accuracy_1 <- classification_summary_cv(
+  model = diabetes_model_1, data = diabetes_sample, cutoff = 0.15, k = 10)
+cv_accuracy_1$cv
+```

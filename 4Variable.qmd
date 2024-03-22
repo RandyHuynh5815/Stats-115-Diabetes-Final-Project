@@ -1,0 +1,148 @@
+---
+title: "4Variable"
+format: html
+editor: visual
+---
+
+```{r}
+#| echo: false
+
+# Load packages
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+```
+
+## Preparing for Model Creation
+
+```{r}
+#| echo: false
+
+# Load dataset and convert each variable in factors
+diabetes <- read.csv("data/binary_diabetes.csv", header=TRUE)
+cols <- c("Diabetes_binary","HighBP","HighChol","CholCheck","Smoker","Stroke","HeartDiseaseorAttack","PhysActivity","Fruits","Veggies","HvyAlcoholConsump","AnyHealthcare","NoDocbcCost","DiffWalk","Sex")
+diabetes[cols] <- lapply(diabetes[cols], factor)
+```
+
+```{r}
+head(diabetes)
+```
+
+### 4-way Table
+
+```{r}
+# Prelimary data analysis by getting diabetes count grouped by the 4 variables: HighBP, PhysActivity, HeartDiseaseorAttack, HighChol
+con4<-xtabs(~HighBP+PhysActivity+HeartDiseaseorAttack+HighChol+Diabetes_binary, data=diabetes)
+ftable(con4)
+```
+
+```{r}
+# Convert counts to percentages per permuation/grouping of the 4 variables (16 groups total)
+con4%>%ftable(row.vars=c("HighBP", "PhysActivity","HeartDiseaseorAttack", "HighChol"))%>%prop.table(margin = 1)%>%round(2)
+```
+
+### Random Sample
+
+```{r}
+# Taking random sample of the dataset
+set.seed(84735)
+diabetes_sample <- diabetes %>%
+  sample_n(size=10000)
+```
+
+```{r}
+# Perform the same preliminary data analysis for the random sample to ensure distribution is maintained
+con4_sample<-xtabs(~HighBP+PhysActivity+HeartDiseaseorAttack+HighChol+Diabetes_binary, data=diabetes_sample)
+ftable(con4_sample)
+```
+
+```{r}
+con4_sample%>%ftable(row.vars=c("HighBP", "PhysActivity","HeartDiseaseorAttack", "HighChol"))%>%prop.table(margin = 1)%>%round(2)
+```
+
+## Train 4 Variable Model
+
+### Prior Model
+
+```{r}
+# Defining the priors for each variable
+prior_bp <- normal(0.17609, 0.02715)
+prior_phys <- normal(-2.4511, 0.1178)
+prior_heart <- normal(0.7793, 0.028)
+prior_chol <- normal(0.4033, 0.0615)
+prior_params <- c(prior_bp, prior_phys, prior_heart, prior_chol)
+```
+
+```{r}
+# Training the prior model based on the 4 variables
+diabetes_prior <- stan_glm(Diabetes_binary ~ 
+                             HighBP+PhysActivity+HeartDiseaseorAttack+HighChol,
+                             data = diabetes_sample, family = binomial,
+                             prior_intercept = normal(-1.7585, 0.1273),
+                             prior = prior_params,
+                             chains = 4, iter = 5000*2, seed = 84735,
+                             prior_PD = TRUE)
+```
+
+```{r}
+# Get prior summary statistics
+prior_summary(diabetes_prior)
+```
+
+### Updating To Get Posterior
+
+```{r}
+# Update model to get the posterior
+diabetes_model_2 <- update(diabetes_prior, prior_PD = FALSE)
+```
+
+```{r}
+# Plot diagnostic plots for simulation results 
+mcmc_trace(diabetes_model_2)
+mcmc_dens_overlay(diabetes_model_2)
+mcmc_acf(diabetes_model_2)
+```
+
+```{r}
+# Posterior summary statistics
+tidy(diabetes_model_2, effects = c("fixed", "aux"),
+     conf.int = TRUE, conf.level = 0.80) %>% 
+  select(-std.error)
+```
+
+```{r}
+# Get the 80% credible interval for odds
+exp(posterior_interval(diabetes_model_2, prob = 0.80))
+```
+
+## Posterior Evaluation
+
+```{r}
+# Posterior predictive check to ensure simulations maintain the same features as the original data
+proportion_diabetes <- function(x){mean(x == 1)}
+pp_check(diabetes_model_2, nreps = 100,
+         plotfun = "stat", stat = "proportion_diabetes") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+# Get classification summary of model with basic cutoff of 0.5
+classification_summary(model = diabetes_model_2, data = diabetes_sample, cutoff = 0.5)
+```
+
+```{r}
+# Get classification summary of model with cutoff of 0.15 based on prior knowledge of diabetes prevalence
+classification_summary(model = diabetes_model_2, data = diabetes_sample, cutoff = 0.15)
+```
+
+```{r}
+# Get cross-validated classifcation summaries of model with cutoff of 0.15
+set.seed(84735)
+cv_accuracy_2 <- classification_summary_cv(
+  model = diabetes_model_2, data = diabetes_sample, cutoff = 0.15, k = 10)
+cv_accuracy_2$cv
+```
