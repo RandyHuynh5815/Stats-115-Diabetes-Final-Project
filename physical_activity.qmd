@@ -1,0 +1,118 @@
+---
+title: "PhysicalActivity"
+format: html
+editor: visual
+---
+
+## Model building on Physical Activity and All Variables
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dev = 'pdf')
+```
+
+``` {r echo=FALSE, message=FALSE}
+library(bayesrules)
+library(tidyverse)
+library(rstanarm)
+library(bayesplot)
+library(tidybayes)
+library(broom.mixed)
+library(forcats)
+library(dplyr)
+library(Hmisc)
+library(corrplot)
+
+RANDOM_STATE = 84735
+```
+
+```{r}
+df <- read.csv("./data/binary_diabetes.csv")
+sample_n(df, 3)
+nrow(df)
+```
+
+```{r}
+# Set sample size
+set.seed(RANDOM_STATE)
+diabetes_sample <- df %>%
+  sample_n(size=10000)
+
+cutoff <- 0.15
+```
+
+## Informative prior
+physactivity\
+We build a model with an informative prior.
+```{r}
+diabetes_model_I_PA <- stan_glm(Diabetes_binary ~ PhysActivity,
+                               data = diabetes_sample,
+                               family = binomial,
+                               prior_intercept = normal(-1.7585, 0.1273, autoscale = FALSE),
+                               prior = normal(-2.4511, 0.1178, autoscale = FALSE),
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+# MCMC diagnosis
+mcmc_trace(diabetes_model_I_PA, size=0.1)
+mcmc_dens_overlay(diabetes_model_I_PA)
+mcmc_acf(diabetes_model_I_PA, lags = 100)
+```
+
+```{r}
+# get CI
+posterior_interval(diabetes_model_I_PA, prob = 0.80)
+exp(posterior_interval(diabetes_model_I_PA, prob = 0.80))
+
+# probability distribution
+pp_check(diabetes_model_I_PA, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+# confusion matrix
+summary_I_PA <-  classification_summary(model = diabetes_model_I_PA, 
+                                        data = diabetes_sample, cutoff = cutoff)
+summary_I_PA
+```
+For PhysActivity, the results are exactly the same for models with default and informative prior. The model has low sensitivity (true positive rate), which is very bad for detecting diabetes because the model predicts a lots of patients as negative when they actually have diabetes.
+
+## Using multiple predictors
+All variable with default prior
+```{r}
+diabetes_model_I_all <- stan_glm(Diabetes_binary ~ .,
+                               data = diabetes_sample,
+                               family = binomial,
+                               chains = 4, iter = 5000*2,
+                               seed = RANDOM_STATE,
+                               prior_PD = FALSE, refresh=FALSE)
+# MCMC diagnosis
+mcmc_trace(diabetes_model_I_all, size=0.1)
+mcmc_dens_overlay(diabetes_model_I_all)
+mcmc_acf(diabetes_model_I_all, lags = 100)
+```
+
+
+```{r}
+# get CI
+posterior_interval(diabetes_model_I_all, prob = 0.80)
+exp(posterior_interval(diabetes_model_I_all, prob = 0.80))
+
+# probability distribution
+pp_check(diabetes_model_I_all, nreps = 100,
+         plotfun = "stat", stat = "prop") + 
+  xlab("probability of diabetes")
+```
+
+```{r}
+# confusion matrix
+summary_all <- classification_summary(model = diabetes_all_model, 
+                                 data = diabetes_sample, cutoff = cutoff)
+summary_all
+```
+
+The model performance is not particulary better than other models even though it has all variables.
+## Get ELPD
+```{r}
+elpd_PA <- loo(diabetes_model_I_PA)
+elpd_all <- loo(diabetes_model_I_all)
+```
